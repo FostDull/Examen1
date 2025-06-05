@@ -123,6 +123,26 @@ for linea in lineas:
         palabras.append(" ".join(palabra))
         valores.append(int(valor))
 
+sentimientos_ESP = pd.DataFrame({'Palabra': palabras, 'Valor': valores})
+
+# Función para limpiar texto
+def lmpTxt(text):
+    txt = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
+    txt = txt.lower()
+    txt = re.sub('\W+', "", txt)
+    txt = txt.strip()
+    return txt
+
+# Limpiar las palabras del diccionario
+sentimientos_ESP['Palabra'] = sentimientos_ESP['Palabra'].apply(lmpTxt)
+# Traducir al español
+traductor = GoogleTranslator(source='en', target='es')
+sentimientos_ESP["Palabra_es"] = sentimientos_ESP["Palabra"].apply(lambda x: traductor.translate(x))
+
+sentimiento_LTN = dict(zip(sentimientos_ESP['Palabra_es'], sentimientos_ESP['Valor']))
+
+
+
 !pip install -U spacy
 !python -m spacy download es_core_news_sm
 
@@ -136,10 +156,10 @@ def obtener_lemma(palabra):
   return doc[0].lemma_ if len(doc) > 0 else palabra
 
 #Usarlo en el diccionario traducido y crear un nuevo diccionario con los lemas
-diccionario_url['lemma'] = diccionario_url['Palabra_es'].apply(obtener_lemma)
+sentimiento_LTN['lemma'] = sentimiento_LTN['Palabra_es'].apply(obtener_lemma)
 
-diccionario_lemma = dict(zip(diccionario_url['lemma'], diccionario_url['Valor']))
-sentimiento_es = dict(zip(diccionario_url['Palabra_Lt'], diccionario_url['Valor']))
+diccionario_lemma = dict(zip(sentimiento_LTN['lemma'], sentimiento_LTN['Valor']))
+sentimiento_es = dict(zip(sentimiento_LTN['Palabra_Lt'], sentimiento_LTN['Valor']))
 
 #Función para realizar encontrar las palabras con el lema
 
@@ -163,8 +183,6 @@ def analizar_sentimiento_lemma(texto):
           puntaje_total += puntaje
 
     return pd.Series([", ".join(encontradas), puntaje_total])
-
-tin
 
 pLatin[['Encontradas_lema']] = pLatin['Notes'].apply(analizar_sentimiento_lemma)
 pLatin.head(10)
